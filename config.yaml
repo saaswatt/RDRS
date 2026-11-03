@@ -1,0 +1,36 @@
+
+application:
+  name: RDRS
+  version: "1.0.0"
+  simulation_mode: true
+
+monitoring:
+  directories:
+    - "./data/sandbox"
+  recursive: true
+
+detection:
+  window_seconds: 60
+  thresholds:
+    rapid_modification: 30
+    mass_rename: 15
+    high_entropy: 7.0
+    cpu_spike: 80
+
+scoring:
+  rapid_encryption: 40
+  mass_rename: 30
+  high_entropy: 25
+  cpu_spike: 15
+  unknown_program: 10
+
+response:
+  simulation_mode: true
+  copy_evidence: true
+  terminate_process: false
+
+database:
+  path: "./data/rdrs.db"
+
+quarantine:
+  path: "./data/quarantine"

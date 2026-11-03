@@ -1,0 +1,41 @@
+
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Allow example environment file
+!.env.example
+
+# Runtime database
+*.db
+*.sqlite3
+
+# Runtime logs
+logs/*
+!logs/.gitkeep
+
+# Runtime data
+data/*
+!data/.gitkeep
+!data/sandbox/
+!data/quarantine/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
