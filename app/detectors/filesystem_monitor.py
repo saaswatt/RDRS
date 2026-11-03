@@ -5,7 +5,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from app.core.config import load_config
-from app.core.logging import get_logger
+from app.core.logging import setup_logging, get_logger
 
 
 class RDRSEventHandler(FileSystemEventHandler):
@@ -133,5 +133,6 @@ class FilesystemMonitor:
 
 
 if __name__ == "__main__":
+    setup_logging()
     monitor = FilesystemMonitor()
     monitor.run()
