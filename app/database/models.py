@@ -117,22 +117,19 @@ class Process(Base):
         nullable=True
     )
 
-    cpu_percent: Mapped[float] = mapped_column(
+    cpu_percent: Mapped[float | None] = mapped_column(
         Float,
-        default=0.0,
-        nullable=False
+        nullable=True
     )
 
-    memory_percent: Mapped[float] = mapped_column(
+    memory_percent: Mapped[float | None] = mapped_column(
         Float,
-        default=0.0,
-        nullable=False
+        nullable=True
     )
 
-    memory_rss: Mapped[int] = mapped_column(
+    memory_rss: Mapped[int | None] = mapped_column(
         Integer,
-        default=0,
-        nullable=False
+        nullable=True
     )
 
     disk_read_bytes: Mapped[int | None] = mapped_column(
@@ -178,12 +175,17 @@ class Process(Base):
             "process_create_time"
         ),
         CheckConstraint(
-            "cpu_percent >= 0",
+            "cpu_percent IS NULL OR cpu_percent >= 0",
             name="ck_process_cpu_nonnegative"
         ),
         CheckConstraint(
-            "memory_percent >= 0 AND memory_percent <= 100",
+            "memory_percent IS NULL OR "
+            "(memory_percent >= 0 AND memory_percent <= 100)",
             name="ck_process_memory_percent"
+        ),
+        CheckConstraint(
+            "memory_rss IS NULL OR memory_rss >= 0",
+            name="ck_process_memory_rss"
         ),
     )
 
