@@ -1,4 +1,4 @@
-
+import math
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -33,46 +33,61 @@ class EventRepository:
         destination_path: str | None = None,
         file_extension: str | None = None,
         timestamp: datetime | None = None,
-        is_directory: bool = False
+        is_directory: bool = False,
+        entropy: float | None = None
     ) -> Event:
         """
         Create and stage a filesystem event for insertion.
-
+        Entropy is optional because not every filesystem event requires an entropy measurement.
         The caller is responsible for committing the transaction.
         """
 
         if not isinstance(event_type, str) or not event_type.strip():
-            raise ValueError("Event type cannot be empty.")
+            raise ValueError("event_type cannot be empty.")
 
         if not isinstance(source_path, str) or not source_path.strip():
-            raise ValueError("Source path cannot be empty.")
+            raise ValueError("source_path cannot be empty.")
 
         if destination_path is not None:
-            if not isinstance(destination_path, str) or not destination_path.strip():
+            if(
+                not isinstance(destination_path, str)
+                or not destination_path.strip()
+            ): 
                 raise ValueError("Destination path cannot be empty.")
-
-        normalized_event_type = event_type.strip().upper()
-
+        
+        if entropy is not None:
+            if(
+                isinstance(entropy, bool)
+                or not isinstance(entropy, (int, float))
+                or not math.isfinite(entropy)
+                or not 0 <= entropy <= 8
+            ):
+                raise ValueError("Entropy must be a finite number between 0 and 8.")
         if timestamp is None:
-            normalized_timestamp = datetime.now(timezone.utc)
-        else:
-            if timestamp.tzinfo is None or timestamp.utcoffset() is None:
-                raise ValueError("Timestamp must be timezone-aware.")
-
-            normalized_timestamp = timestamp.astimezone(timezone.utc)
-
+            timestamp = datetime.now(timezone.utc)
+        elif(
+            timestamp.tzinfo is None
+            or timestamp.utcoffset() is None
+        ):
+            raise ValueError("Timestamp must be timezone-aware.")
+        timestamp = timestamp.astimezone(timezone.utc)
+        
         event = Event(
-            event_type=normalized_event_type,
-            source_path=source_path,
-            destination_path=destination_path,
+            event_type = event_type.strip().upper(),
+            source_path = source_path.strip(),
+            destination_path = (
+                destination_path.strip()
+                if destination_path is not None
+                else None
+            ),
             file_extension=file_extension,
-            timestamp=normalized_timestamp,
+            timestamp=timestamp,
+            entropy=float(entropy) if entropy is not None else None,
             is_directory=is_directory
         )
-
+        
         self.session.add(event)
         self.session.flush()
-
         return event
 
     def get_event_by_id(self, event_id: int) -> Event | None:

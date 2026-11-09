@@ -263,3 +263,62 @@ def test_create_event_normalizes_timestamp_to_utc(db_session):
         2026, 11, 4, 10, 0,
         tzinfo=timezone.utc
     )
+def test_create_event_with_entropy(db_session):
+    """
+    Verify that a valid entropy measurement is stored.
+    """
+
+    repository = EventRepository(db_session)
+
+    event = repository.create_event(
+        event_type="MODIFIED",
+        source_path="data/sandbox/entropy_test.txt",
+        entropy=7.5
+    )
+
+    assert event.entropy == 7.5
+
+
+def test_create_event_without_entropy(db_session):
+    """
+    Verify that entropy can remain unavailable.
+    """
+
+    repository = EventRepository(db_session)
+
+    event = repository.create_event(
+        event_type="CREATED",
+        source_path="data/sandbox/new_file.txt"
+    )
+
+    assert event.entropy is None
+
+
+@pytest.mark.parametrize(
+    "invalid_entropy",
+    [
+        -0.1,
+        8.1,
+        float("nan"),
+        float("inf"),
+        -float("inf"),
+        True,
+        "7.5"
+    ]
+)
+def test_create_event_rejects_invalid_entropy(
+    db_session,
+    invalid_entropy
+):
+    """
+    Verify that invalid entropy measurements are rejected.
+    """
+
+    repository = EventRepository(db_session)
+
+    with pytest.raises(ValueError):
+        repository.create_event(
+            event_type="MODIFIED",
+            source_path="data/sandbox/invalid_entropy.txt",
+            entropy=invalid_entropy
+        )
