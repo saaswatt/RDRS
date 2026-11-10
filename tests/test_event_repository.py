@@ -322,3 +322,71 @@ def test_create_event_rejects_invalid_entropy(
             source_path="data/sandbox/invalid_entropy.txt",
             entropy=invalid_entropy
         )
+def test_get_events_since_returns_only_matching_events(db_session):
+    """
+    Verify that only events at or after the specified
+    timestamp are retrieved.
+    """
+
+    repository = EventRepository(db_session)
+
+    repository.create_event(
+        event_type="CREATED",
+        source_path="data/sandbox/old.txt",
+        timestamp=datetime(2026, 11, 5, 9, 0, tzinfo=timezone.utc)
+    )
+
+    matching_event = repository.create_event(
+        event_type="MODIFIED",
+        source_path="data/sandbox/current.txt",
+        timestamp=datetime(2026, 11, 5, 10, 0, tzinfo=timezone.utc)
+    )
+
+    events = repository.get_events_since(
+        datetime(2026, 11, 5, 10, 0, tzinfo=timezone.utc)
+    )
+
+    assert len(events) == 1
+    assert events[0].id == matching_event.id
+
+
+def test_get_events_since_returns_chronological_order(db_session):
+    """
+    Verify that events are returned from oldest to newest.
+    """
+
+    repository = EventRepository(db_session)
+
+    later_event = repository.create_event(
+        event_type="MODIFIED",
+        source_path="data/sandbox/later.txt",
+        timestamp=datetime(2026, 11, 5, 11, 0, tzinfo=timezone.utc)
+    )
+
+    earlier_event = repository.create_event(
+        event_type="CREATED",
+        source_path="data/sandbox/earlier.txt",
+        timestamp=datetime(2026, 11, 5, 10, 0, tzinfo=timezone.utc)
+    )
+
+    events = repository.get_events_since(
+        datetime(2026, 11, 5, 9, 0, tzinfo=timezone.utc)
+    )
+
+    assert len(events) == 2
+    assert events[0].id == earlier_event.id
+    assert events[1].id == later_event.id
+
+
+def test_get_events_since_rejects_naive_timestamp(db_session):
+    """
+    Verify that timestamps without timezone information
+    are rejected.
+    """
+
+    repository = EventRepository(db_session)
+
+    with pytest.raises(ValueError):
+        repository.get_events_since(
+            datetime(2026, 11, 5, 10, 0)
+        )

@@ -117,6 +117,40 @@ class EventRepository:
         )
 
         return list(self.session.scalars(statement).all())
+        
+    def get_events_since(self, timestamp: datetime) -> list[Event]:
+        """
+        Retrieve all filesystem events recorded at or after
+        the specified timestamp.
+
+        The input timestamp must be timezone-aware.
+        Timestamps are normalized to UTC before querying.
+
+        SQLite does not reliably preserve timezone information
+        in DateTime columns, so the UTC cutoff is converted to
+        a naive UTC datetime for database comparison.
+
+        Events are returned from oldest to newest.
+        """
+
+        if (
+            not isinstance(timestamp, datetime)
+            or timestamp.tzinfo is None
+            or timestamp.utcoffset() is None
+        ):
+            raise ValueError("Timestamp must be timezone-aware.")
+
+        utc_timestamp = timestamp.astimezone(timezone.utc)
+
+        sqlite_timestamp = utc_timestamp.replace(tzinfo=None)
+
+        statement = (
+            select(Event)
+            .where(Event.timestamp >= sqlite_timestamp)
+            .order_by(Event.timestamp.asc(), Event.id.asc())
+        )
+
+        return list(self.session.scalars(statement).all())
 
     def get_events_by_type(
         self,
