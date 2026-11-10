@@ -9,12 +9,20 @@ from app.core.config import load_config
 from app.services import detection_service
 
 
-def make_event(timestamp, event_type="MODIFIED", is_directory=False):
+def make_event(
+    timestamp,
+    event_id=1,
+    event_type="MODIFIED",
+    is_directory=False,
+    source_path="data/sandbox/test.txt",
+    destination_path=None,
+):
     return SimpleNamespace(
         timestamp=timestamp,
+        id=event_id,
         event_type=event_type,
-        source_path="data/sandbox/test.txt",
-        destination_path=None,
+        source_path=source_path,
+        destination_path=destination_path,
         file_extension=".txt",
         entropy=7.5,
         is_directory=is_directory,
@@ -54,10 +62,10 @@ def test_only_events_inside_window_are_analyzed(monkeypatch, config):
     current_time = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
 
     events = [
-        make_event(current_time - timedelta(seconds=30)),
-        make_event(current_time - timedelta(seconds=60)),
-        make_event(current_time - timedelta(seconds=90)),
-        make_event(current_time + timedelta(seconds=10)),
+        make_event(current_time - timedelta(seconds=30), event_id=1),
+        make_event(current_time - timedelta(seconds=60), event_id=2),
+        make_event(current_time - timedelta(seconds=90), event_id=3),
+        make_event(current_time + timedelta(seconds=10), event_id=4),
     ]
 
     setup_detection_mocks(monkeypatch, events)
@@ -84,6 +92,8 @@ def test_empty_detection_window(monkeypatch, config):
     assert result["event_count"] == 0
     assert result["modified_count"] == 0
     assert not any(result["signals"].values())
+    assert result["affected_files"] == []
+    assert result["event_ids"] == []
 
 
 def test_directory_events_are_excluded(monkeypatch, config):
@@ -92,10 +102,12 @@ def test_directory_events_are_excluded(monkeypatch, config):
     events = [
         make_event(
             current_time - timedelta(seconds=10),
+            event_id=1,
             is_directory=True,
         ),
         make_event(
             current_time - timedelta(seconds=20),
+            event_id=2,
             is_directory=False,
         ),
     ]
@@ -109,6 +121,8 @@ def test_directory_events_are_excluded(monkeypatch, config):
 
     assert result["event_count"] == 1
     assert result["modified_count"] == 1
+    assert result["event_ids"] == [2]
+    assert result["affected_files"] == ["data/sandbox/test.txt"]
 
 
 def test_naive_database_timestamps_are_treated_as_utc(
@@ -172,3 +186,47 @@ def test_database_failure_is_propagated(monkeypatch, config):
             config=config,
             current_time=current_time,
         )
+
+
+def test_detection_result_includes_unique_files_and_event_ids(
+    monkeypatch,
+    config,
+):
+    current_time = datetime(
+        2026, 11, 10, 12, 0, tzinfo=timezone.utc
+    )
+
+    events = [
+        make_event(
+            current_time - timedelta(seconds=10),
+            event_id=11,
+            source_path="data/sandbox/file_a.txt",
+        ),
+        make_event(
+            current_time - timedelta(seconds=20),
+            event_id=12,
+            event_type="MOVED",
+            source_path="data/sandbox/file_a.txt",
+            destination_path="data/sandbox/file_b.locked",
+        ),
+        make_event(
+            current_time - timedelta(seconds=15),
+            event_id=13,
+            is_directory=True,
+            source_path="data/sandbox/test_directory",
+        ),
+    ]
+
+    setup_detection_mocks(monkeypatch, events)
+
+    result = detection_service.run_filesystem_detection(
+        config=config,
+        current_time=current_time,
+    )
+
+    assert result["event_ids"] == [11, 12]
+
+    assert result["affected_files"] == [
+        "data/sandbox/file_a.txt",
+        "data/sandbox/file_b.locked",
+    ]

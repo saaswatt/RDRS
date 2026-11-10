@@ -26,13 +26,9 @@ def run_filesystem_detection(
     Retrieve filesystem events from the configured sliding window
     and analyse them using the filesystem detection engine.
 
-    Args:
-        config: Optional application configuration.
-        current_time: Optional timezone-aware reference time.
-                      Primarily useful for deterministic testing.
-
     Returns:
-        Detection results, including the sliding-window boundaries.
+        Detection results, sliding-window boundaries,
+        affected file paths, and database event IDs.
     """
 
     if config is None:
@@ -67,17 +63,27 @@ def run_filesystem_detection(
 
             database_events = repository.get_events_since(window_start)
             window_events = []
-            
+
             for event in database_events:
                 event_timestamp = event.timestamp
-                
+
                 if event_timestamp.tzinfo is None:
-                    event_timestamp = event.timestamp.replace(tzinfo=timezone.utc)
+                    event_timestamp = event_timestamp.replace(
+                        tzinfo=timezone.utc
+                    )
                 else:
-                    event_timestamp = event_timestamp.astimezone(timezone.utc)
-                    
+                    event_timestamp = event_timestamp.astimezone(
+                        timezone.utc
+                    )
+
                 if window_start <= event_timestamp <= window_end:
                     window_events.append(event)
+
+            relevant_events = [
+                event
+                for event in window_events
+                if not event.is_directory
+            ]
 
             filesystem_events = [
                 {
@@ -88,14 +94,32 @@ def run_filesystem_detection(
                     "entropy": event.entropy,
                     "is_directory": event.is_directory,
                 }
-                for event in window_events
-                if not event.is_directory
+                for event in relevant_events
             ]
 
             results = analyze_filesystem_events(
                 filesystem_events,
                 config,
             )
+
+            affected_files = []
+            seen_paths = set()
+
+            for event in relevant_events:
+                paths = [
+                    event.source_path,
+                    event.destination_path,
+                ]
+
+                for path in paths:
+                    if path and path not in seen_paths:
+                        affected_files.append(path)
+                        seen_paths.add(path)
+
+            event_ids = [
+                event.id
+                for event in relevant_events
+            ]
 
     except Exception:
         error_logger.exception(
@@ -105,10 +129,13 @@ def run_filesystem_detection(
 
     results["window_start"] = window_start.isoformat()
     results["window_end"] = window_end.isoformat()
+    results["affected_files"] = affected_files
+    results["event_ids"] = event_ids
 
     system_logger.info(
         "Filesystem detection cycle completed. "
         f"Events={results['event_count']}, "
+        f"Affected files={len(affected_files)}, "
         f"Signals={results['signals']}"
     )
 
