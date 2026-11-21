@@ -1,0 +1,13 @@
+2026-11-03 20:35:42.314 | INFO     | __main__:<module>:19 - Evidence preservation action recorded
+2026-11-10 23:45:22.978 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=1, level=NORMAL, score=0.
+2026-11-10 23:45:39.996 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=2, level=NORMAL, score=0.
+2026-11-10 23:46:40.002 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=3, level=NORMAL, score=0.
+2026-11-10 23:47:40.016 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=4, level=NORMAL, score=0.
+2026-11-11 01:04:43.915 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=6, level=NORMAL, score=0.
+2026-11-11 01:48:37.182 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=7, level=NORMAL, score=0.
+2026-11-11 01:56:30.102 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=8, level=NORMAL, score=0.
+2026-11-11 02:08:42.980 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=9, level=NORMAL, score=0.
+2026-11-21 19:14:18.035 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=10, level=NORMAL, score=0.
+2026-11-21 19:16:22.006 | WARNING  | app.services.incident_response_service:process_detection_response:179 - Incident response recorded: incident=RDRS-20261121134621-956702A6, score_id=11, alert_id=1.
+2026-11-21 19:17:24.268 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=12, level=NORMAL, score=0.
+2026-11-21 23:26:53.213 | INFO     | app.services.incident_response_service:process_detection_response:192 - Threat score recorded: score_id=14, level=NORMAL, score=0.

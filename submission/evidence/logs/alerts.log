@@ -1,0 +1,2 @@
+2026-11-03 20:35:42.313 | WARNING  | __main__:<module>:17 - Suspicious file modification detected
+2026-11-21 19:16:22.006 | WARNING  | app.services.incident_response_service:process_detection_response:174 - Critical incident created: RDRS-20261121134621-956702A6, score=95.
