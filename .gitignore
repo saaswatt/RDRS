@@ -1,5 +1,5 @@
-
-# Python virtual environment
+@'
+# Python virtual environments
 .venv/
 venv/
 env/
@@ -14,11 +14,9 @@ htmlcov/
 # Environment variables and secrets
 .env
 .env.*
-
-# Allow example environment file
 !.env.example
 
-# Runtime database
+# Runtime databases
 *.db
 *.sqlite3
 
@@ -26,11 +24,9 @@ htmlcov/
 logs/*
 !logs/.gitkeep
 
-# Runtime data
+# Runtime data: databases, reports, sandbox and quarantine
 data/*
 !data/.gitkeep
-!data/sandbox/
-!data/quarantine/
 
 # IDE files
 .vscode/
@@ -39,3 +35,4 @@ data/*
 # OS files
 .DS_Store
 Thumbs.db
+'@ | Set-Content .\.gitignore -Encoding UTF8

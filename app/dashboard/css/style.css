@@ -1,0 +1,60 @@
+
+body {
+    background-color: #121212;
+    color: #f1f1f1;
+    min-height: 100vh;
+}
+
+.navbar-brand {
+    letter-spacing: 1px;
+}
+
+.navbar-text {
+    font-size: 0.9rem;
+}
+
+.card {
+    border-radius: 8px;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+h4 {
+    font-weight: 600;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    color: #adb5bd;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+#threat-level {
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+#monitoring-chart {
+    max-height: 350px;
+}
+
+@media (max-width: 576px) {
+    .navbar-text {
+        display: none;
+    }
+
+    main {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}

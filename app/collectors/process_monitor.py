@@ -17,6 +17,11 @@ system_logger = get_logger("system")
 error_logger = get_logger("errors")
 
 
+# Retain Process objects between collection cycles so that
+# psutil can calculate CPU usage using successive measurements.
+_PROCESS_CACHE: dict[int, tuple[float, psutil.Process]] = {}
+
+
 def inspect_process(pid: int) -> dict[str, Any] | None:
     """
     Collect metadata for a specific running process.
@@ -30,7 +35,30 @@ def inspect_process(pid: int) -> dict[str, Any] | None:
         raise ValueError("PID must be a positive integer.")
 
     try:
-        process = psutil.Process(pid)
+        cached_entry = _PROCESS_CACHE.get(pid)
+        process = None
+
+        if cached_entry is not None:
+            cached_create_time, cached_process = cached_entry
+
+            try:
+                if (
+                    cached_process.is_running()
+                    and cached_process.create_time() == cached_create_time
+                ):
+                    process = cached_process
+
+            except psutil.Error:
+                process = None
+
+        if process is None:
+            process = psutil.Process(pid)
+            process_create_time = process.create_time()
+
+            _PROCESS_CACHE[pid] = (
+                process_create_time,
+                process
+            )
 
         with process.oneshot():
 
@@ -88,6 +116,8 @@ def inspect_process(pid: int) -> dict[str, Any] | None:
             }
 
     except psutil.NoSuchProcess:
+        _PROCESS_CACHE.pop(pid, None)
+
         system_logger.debug(
             f"Process {pid} no longer exists."
         )
@@ -100,6 +130,8 @@ def inspect_process(pid: int) -> dict[str, Any] | None:
         return None
 
     except psutil.ZombieProcess:
+        _PROCESS_CACHE.pop(pid, None)
+
         system_logger.debug(
             f"Process {pid} is a zombie process."
         )
@@ -110,35 +142,55 @@ def inspect_process(pid: int) -> dict[str, Any] | None:
             f"Unable to inspect process {pid}: {exc}"
         )
         return None
+
+
 def collect_running_processes() -> list[dict[str, Any]]:
     """
     Collect metadata from all accessible running processes.
-    Individual process failures are skipped without interrupting the overall collection.
+
+    Individual process failures are skipped without
+    interrupting the overall collection.
+
     Returns:
-    A list of directories containing process metadata.
+        A list of dictionaries containing process metadata.
     """
+
     try:
         process_ids = psutil.pids()
+
     except psutil.Error as exc:
         error_logger.exception(
             f"Unable to enumerate running processes: {exc}"
         )
         return []
+
     collected_processes = []
+
+    active_pids = set(process_ids)
+
+    # Remove cached objects for processes that no longer exist.
+    stale_pids = set(_PROCESS_CACHE) - active_pids
+
+    for stale_pid in stale_pids:
+        _PROCESS_CACHE.pop(stale_pid, None)
+
     for pid in process_ids:
+
         if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
             system_logger.debug(
                 f"Skipping invalid process ID: {pid!r}"
             )
             continue
+
         process_info = inspect_process(pid)
+
         if process_info is not None:
             collected_processes.append(process_info)
-            
-    
+
     system_logger.info(
-        f"Process scan completed."
-        f"Collected {len(collected_processes)} of"
+        f"Process scan completed. "
+        f"Collected {len(collected_processes)} of "
         f"{len(process_ids)} processes."
     )
+
     return collected_processes
